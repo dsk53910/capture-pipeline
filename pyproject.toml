@@ -1,0 +1,19 @@
+[project]
+name = "capture-pipeline"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "mss>=9.0.0",
+    "sounddevice>=0.4.6",
+    "numpy>=1.26.0",
+    "pillow>=10.0.0",
+    "openai>=1.0.0",
+    "aiofiles>=23.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+whisper = ["openai-whisper>=20231117"]
+diarization = [
+    "pyannote-audio>=4.0.4",
+]
