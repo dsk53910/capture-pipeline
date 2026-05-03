@@ -94,6 +94,7 @@ class Pipeline:
         self._transcripts: list[AudioTranscript] = []
         self._last_summary_at = time.time()
         self._summary_count = 0
+        self._on_event: callable = lambda *a, **kw: None  # hook for server events
 
     async def run(self):
         """Main loop: capture + async process until interrupted."""
@@ -153,6 +154,12 @@ class Pipeline:
             try:
                 desc = await self._vision.describe(frame)
                 self._frames.append(desc)
+                await self._on_event("vision", {
+                    "captured_at": desc.captured_at,
+                    "description": desc.description,
+                    "width": desc.width,
+                    "height": desc.height,
+                })
                 print(
                     f"[vision] {time.strftime('%H:%M:%S', time.localtime(desc.captured_at))} "
                     f"{desc.description[:120]}..."
@@ -180,6 +187,13 @@ class Pipeline:
                         if translation:
                             transcript.translation = translation
                     self._transcripts.append(transcript)
+                    await self._on_event("audio", {
+                        "captured_at": transcript.captured_at,
+                        "text": transcript.text,
+                        "language": transcript.language,
+                        "duration": transcript.duration,
+                        "translation": transcript.translation,
+                    })
                     ts = time.strftime('%H:%M:%S', time.localtime(transcript.captured_at))
                     print(f"[audio] {ts} [{transcript.language}] \"{transcript.text[:100]}...\"")
                     if transcript.translation:
@@ -202,6 +216,12 @@ class Pipeline:
             summary = await self._summarizer.summarize(segment)
             self._summary_count += 1
             await self._save_summary(summary, segment.start_time, segment.end_time)
+            await self._on_event("summary", {
+                "number": self._summary_count,
+                "start": segment.start_time,
+                "end": segment.end_time,
+                "text": summary,
+            })
             print(f"\n[summary #{self._summary_count}]\n{summary}\n")
         except Exception as e:
             print(f"[summary] error: {e}")

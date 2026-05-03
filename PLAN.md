@@ -1,50 +1,72 @@
 # Development plan
 
-## Pipeline (`main.py` + `capture.py` + `processor.py`)
+## ✅ Done
 
-### 🔴 High priority
+- [x] **Server** — `pipeline_server.py`: HTTP API on :8730, event buffer (TUI polls `/events?since=N`)
+- [x] **TUI** — `pipeline_tui.py`: Textual control panel, settings + live log, timer
+- [x] **One-button launch** — `start.sh`: server (bg) + TUI (fg), Ctrl+C stops both
+- [x] **Config persistence** — `pipeline_config.yaml` auto-saves from TUI
+- [x] **Audio device dropdown** — live selection from sounddevice query
+- [x] **Model selection** — vision, whisper, summary in TUI
+- [x] **Translation toggle** — on/off + target language in TUI
+- [x] **Interval controls** — screen interval, segment duration in TUI
+- [x] **MOV transcription** — `transcribe_mov.py` with timestamps, speaker labels (RMS), compression
+- [x] **BGRA→RGB fix** — mss returns BGRA, converted to RGB for PIL/GPT-4o
+- [x] **Shutdown fix** — instant stop button, no WS hang, polling-based events
+- [x] **Audio noise filter** — RMS check in `_emit_chunk`, skips near-silence chunks
+- [x] **Stereo/multi-channel mix** — aggregate device channels mixed to mono
 
-- [ ] **Audio chunk overlap** — add 1s overlap between consecutive chunks to avoid speech loss at boundaries
-- [ ] **Session-based output** — `output/2026-05-01_1430/` with `index.md`, not flat file list
-- [ ] **On-demand screenshot** — keyboard hotkey or HTTP endpoint to trigger instant frame capture
+---
 
-### 🟡 Medium priority
+## Server + TUI (next)
 
-- [ ] **Monitor/window selection** — `--monitor 1` or `--window "VS Code"` flag
-- [ ] **Adaptive screenshot interval** — faster when active window changes, slower when idle
-- [ ] **Pause/resume** — console key `p` or SIGUSR1 to toggle capture
-- [ ] **Session metadata** — per-session config dump, total duration, token usage
+- [ ] **System audio switching** — auto-set output on start, restore on stop (needs `SwitchAudioSource`)
+- [ ] **Live tips** — contextual advice: quiet voice → increase gain, silence → check device, tokens → try gpt-4o-mini
+- [ ] **Audio gain slider** — actually apply gain multiplier to audio samples server-side
+- [ ] **Audio chunk overlap** — add overlap between chunks to avoid speech loss at boundaries
 
-### 🟢 Low priority
+---
 
-- [ ] **Re-summarization** — take existing `summary_*.md` files, produce daily/weekly meta-summary
-- [ ] **config.yaml** — single config file instead of 15 CLI flags
+## Pipeline
+
+### 🔴 High
+
+- [ ] **Session-based output** — `output/2026-05-01_1430/` with `index.md`
+- [ ] **On-demand screenshot** — hotkey or HTTP endpoint for instant frame
+
+### 🟡 Medium
+
+- [ ] **Monitor/window selection** — `--monitor N` or capture specific window
+- [ ] **Adaptive screenshot interval** — faster on activity, slower when idle
+- [ ] **Pause/resume** — TUI button or HTTP endpoint
+- [ ] **Session metadata** — config dump, total duration, token usage per session
+
+### 🟢 Low
+
+- [ ] **Re-summarization** — take existing `summary_*.md`, produce daily/weekly meta-summary
 
 ---
 
 ## Transcription (`transcribe_mov.py`)
 
-### 🔴 High priority
+### 🔴 High
 
-- [ ] **Speaker diarization (pyannote 3.1)** — replace RMS heuristic with proper model (requires `HF_TOKEN`)
-- [ ] **Audio preprocessing** — `noisereduce` + multiband compressor before Whisper input
+- [ ] **Speaker diarization (pyannote 3.1)** — proper model instead of RMS heuristic (requires `HF_TOKEN`)
+- [ ] **Audio preprocessing** — `noisereduce` + multiband compressor before Whisper
 
-### 🟡 Medium priority
+### 🟡 Medium
 
-- [ ] **Local Whisper (faster-whisper)** — CTranslate2 backend, 3-4× faster, no API cost
-- [ ] **Confidence scores** — expose Whisper segment confidence `[0.92]` in output
-- [ ] **Chunk overlap + dedup** — 2s overlap between chunks, remove duplicate phrases at boundaries
+- [ ] **Local Whisper (faster-whisper)** — CTranslate2, 3-4× faster, no API cost
+- [ ] **Confidence scores** — per-segment `[0.92]` from Whisper
+- [ ] **Chunk overlap + dedup** — 2s overlap, remove duplicates at boundaries
 
-### 🟢 Low priority
+### 🟢 Low
 
 - [ ] **Batch processing** — glob patterns, progress bar, skip existing `.txt`
-- [ ] **Export formats** — SRT subtitles, JSON with segments, Markdown table
+- [ ] **Export formats** — SRT subtitles, JSON with segments
 
 ---
 
 ## Rust layer (future)
 
-Capture layer (`mss` + `sounddevice` equivalents) in Rust via `pyo3` bindings:
-- Lower CPU/latency for screen grab and audio callback
-- AI calls stay in Python (network-bound, no benefit from Rust)
-- Not critical — current Python perf is adequate
+Capture in Rust via `pyo3` — lower latency. Not critical — current Python perf is adequate.

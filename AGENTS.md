@@ -18,8 +18,29 @@ brew install --cask blackhole-2ch
 #   + → Create Aggregate Device      (BlackHole 2ch + Microphone)
 # In System Settings → Sound → Output: select Multi-Output Device
 
-# 4. Launch
-./run.sh
+# 4. Launch (one button)
+./start.sh
+```
+
+## UI (new)
+
+```
+./start.sh          → launches server + TUI, Ctrl+C to stop both
+./run.sh            → headless mode (CLI only, full args)
+```
+
+```
+start.sh
+├── pipeline_server.py &    (background HTTP :8730)
+└── pipeline_tui.py         (Textual TUI, foreground)
+
+TUI features:
+  - Live device dropdown (no system settings needed)
+  - Model selection (vision, whisper, summary)
+  - Translation toggle + target language
+  - Gain / overlap / interval sliders
+  - Contextual tips during capture
+  - Config auto-saves to pipeline_config.yaml
 ```
 
 ## Architecture
@@ -28,16 +49,21 @@ brew install --cask blackhole-2ch
 capture.py       — ScreenCapture (mss, daemon thread), AudioCapture (sounddevice, callback thread)
 processor.py     — VisionProcessor (GPT-4o), AudioProcessor (Whisper), Translator, Summarizer
 main.py          — Pipeline orchestrator: async loop, queues, signal handling, CLI
+pipeline_server.py — HTTP server wrapping Pipeline, event buffer (TUI polls /events)
+pipeline_tui.py  — Textual TUI: settings panel, live log, tips, one-button control
 transcribe_mov.py — Offline MOV → audio extract (afconvert) → transcribe + diarize
-run.sh           — Launch wrapper with defaults
+run.sh           — Headless launch wrapper with defaults
+start.sh         — Server + TUI launch (one button)
 .env             — OPENAI_API_KEY (loaded via python-dotenv)
+pipeline_config.yaml — Auto-saved settings
 output/          — frame_*.txt, audio_*.txt, summary_*.md
 ```
 
 ## Key commands
 
 ```bash
-./run.sh                           # live capture + screenshot + transcribe + summary
+./start.sh                         # TUI mode (server + control panel)
+./run.sh                           # headless mode (CLI only)
 ./run.sh --list-devices            # show audio devices
 ./run.sh --screen-interval 2       # faster screenshots
 ./run.sh --audio-device "BlackHole 2ch"  # override audio device

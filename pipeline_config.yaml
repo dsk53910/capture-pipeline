@@ -1,0 +1,13 @@
+audio_chunk_duration: 15.0
+audio_chunk_overlap: 1.0
+audio_device: Aggregate Device
+audio_gain: 1.0
+audio_silence_threshold: 0.01
+output_dir: ./output
+screen_interval: 30.0
+segment_duration: 60
+summary_model: gpt-4o
+translate: true
+translate_to: Russian
+vision_model: gpt-4o
+whisper_model: whisper-1

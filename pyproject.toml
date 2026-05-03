@@ -1,6 +1,6 @@
 [project]
 name = "capture-pipeline"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.11"
 dependencies = [
     "mss>=9.0.0",
@@ -10,10 +10,16 @@ dependencies = [
     "openai>=1.0.0",
     "aiofiles>=23.0.0",
     "python-dotenv>=1.0.0",
+    "aiohttp>=3.9.0",
+    "textual>=1.0.0",
+    "pyyaml>=6.0",
 ]
+
+[project.scripts]
+capture-pipeline = "pipeline_tui:main"
+capture-server = "pipeline_server:main"
+capture-headless = "main:main"
+capture-transcribe = "transcribe_mov:main"
 
 [project.optional-dependencies]
 whisper = ["openai-whisper>=20231117"]
-diarization = [
-    "pyannote-audio>=4.0.4",
-]
