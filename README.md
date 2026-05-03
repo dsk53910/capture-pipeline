@@ -9,14 +9,14 @@ Records your desktop activity: screenshots are described, audio is transcribed, 
 ### Option A: Homebrew (recommended)
 
 ```bash
-brew tap USER/capture
+brew tap dsk53910/capture
 brew install capture-pipeline
 ```
 
 ### Option B: Install script
 
 ```bash
-git clone https://github.com/USER/capture-pipeline.git
+git clone https://github.com/dsk53910/capture-pipeline.git
 cd capture-pipeline
 ./install.sh
 ```
@@ -26,7 +26,7 @@ cd capture-pipeline
 ```bash
 brew install --cask blackhole-2ch        # audio loopback driver
 brew install uv                          # Python package manager
-git clone https://github.com/USER/capture-pipeline.git
+git clone https://github.com/dsk53910/capture-pipeline.git
 cd capture-pipeline
 uv sync
 echo 'OPENAI_API_KEY=sk-...' > .env
@@ -144,7 +144,7 @@ install.sh         — macOS installer
 ```bash
 # Homebrew
 brew uninstall capture-pipeline
-brew untap USER/capture
+brew untap dsk53910/capture
 brew uninstall --cask blackhole-2ch   # optional
 
 # Manual
