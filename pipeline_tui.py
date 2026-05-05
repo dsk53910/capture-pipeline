@@ -79,7 +79,6 @@ class PipelinesTUI(App):
     BINDINGS = [
         ("ctrl+c", "quit", "Quit"),
         ("ctrl+q", "quit", "Quit"),
-        ("escape", "quit", "Quit"),
     ]
 
     CSS = """
@@ -264,8 +263,14 @@ class PipelinesTUI(App):
             if result.get("status") == "started":
                 self._running = True
                 self._log("▶ Capture started", "event-summary")
-                self.query_one("#btn-start", Button).disabled = True
-                self.query_one("#btn-stop", Button).disabled = False
+                start_btn = self.query_one("#btn-start", Button)
+                stop_btn = self.query_one("#btn-stop", Button)
+                start_btn.disabled = True
+                start_btn.variant = "default"
+                stop_btn.disabled = False
+                stop_btn.variant = "error"
+                start_btn.refresh()
+                stop_btn.refresh()
                 self._timer_start = __import__("time").time()
                 self._poll_timer = self.set_interval(1, self._tick_timer)
             else:
@@ -283,11 +288,17 @@ class PipelinesTUI(App):
             self._events_timer.stop()
             self._events_timer = None
         self._log("⏹ Stopping...", "event-summary")
-        self.query_one("#btn-start", Button).disabled = False
-        self.query_one("#btn-stop", Button).disabled = True
+        start_btn = self.query_one("#btn-start", Button)
+        stop_btn = self.query_one("#btn-stop", Button)
+        start_btn.disabled = False
+        start_btn.variant = "success"
+        stop_btn.disabled = True
+        stop_btn.variant = "default"
+        start_btn.refresh()
+        stop_btn.refresh()
         self.query_one("#status-bar", Static).update("Status: ● Stopped")
         try:
-            await self._client.stop()
+            result = await self._client.stop()
         except Exception:
             pass
         self._events_timer = self.set_interval(1.0, self._poll_events)
