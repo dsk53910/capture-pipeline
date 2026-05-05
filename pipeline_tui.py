@@ -144,8 +144,8 @@ class PipelinesTUI(App):
         yield Header()
         with Horizontal(id="main-area"):
             with Vertical(id="settings"):
-                yield Label("⚙ Аудио", classes="section")
-                yield Select([], id="sel-device", prompt="Загрузка...")
+                yield Label("⚙ Audio", classes="section")
+                yield Select([], id="sel-device", prompt="Loading...")
                 yield Select(
                     [(f"{v}x", v) for v in [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]],
                     id="sel-gain", prompt="Gain 1.0x",
@@ -154,7 +154,7 @@ class PipelinesTUI(App):
                     [(f"{v}s", v) for v in [0.0, 0.5, 1.0, 1.5, 2.0]],
                     id="sel-overlap", prompt="Overlap 1.0s",
                 )
-                yield Label("Модели", classes="section")
+                yield Label("Models", classes="section")
                 yield Select(
                     [("gpt-4o", "gpt-4o"), ("gpt-4o-mini", "gpt-4o-mini")],
                     id="sel-vision", prompt="Vision gpt-4o",
@@ -167,38 +167,38 @@ class PipelinesTUI(App):
                     [("gpt-4o", "gpt-4o"), ("gpt-4o-mini", "gpt-4o-mini")],
                     id="sel-summary", prompt="Summary gpt-4o",
                 )
-                yield Label("Перевод", classes="section")
+                yield Label("Translation", classes="section")
                 yield Switch(id="sw-translate", value=False)
                 yield Select(
                     [("Russian", "Russian"), ("English", "English")],
                     id="sel-translate-to", prompt="→ Russian",
                 )
-                yield Label("Интервалы", classes="section")
+                yield Label("Intervals", classes="section")
                 yield Select(
-                    [(f"{v}с", v) for v in [2.0, 3.0, 5.0, 10.0, 15.0, 30.0]],
-                    id="sel-screen", prompt="Скрин 5с",
+                    [(f"{v}s", v) for v in [2.0, 3.0, 5.0, 10.0, 15.0, 30.0]],
+                    id="sel-screen", prompt="Screen 5s",
                 )
                 yield Select(
-                    [(f"{v//60}м", v) for v in [60, 120, 180, 300, 600, 900]],
-                    id="sel-segment", prompt="Сегмент 5м",
+                    [(f"{v//60}m", v) for v in [60, 120, 180, 300, 600, 900]],
+                    id="sel-segment", prompt="Segment 5m",
                 )
-                yield Button("▶ Старт", id="btn-start", variant="success")
-                yield Button("⏹ Стоп", id="btn-stop", variant="error", disabled=True)
-                yield Button("💾 Сохранить", id="btn-save")
+                yield Button("▶ Start", id="btn-start", variant="success")
+                yield Button("⏹ Stop", id="btn-stop", variant="error", disabled=True)
+                yield Button("💾 Save", id="btn-save")
             with Vertical(id="log-panel"):
-                yield Label("Лог событий", classes="section")
+                yield Label("Event Log", classes="section")
                 yield RichLog(id="log", markup=True)
-        yield Static("Статус: ● Отключён", id="status-bar")
+        yield Static("Status: ● Disconnected", id="status-bar")
 
     async def on_mount(self):
         self.title = "Capture Pipeline"
 
         try:
             await self._client.connect()
-            self._log("○ Сервер подключён", "event-summary")
+            self._log("○ Server connected", "event-summary")
         except Exception as e:
-            self._log(f"✕ Сервер недоступен: {e}", "event-error")
-            self.query_one("#status-bar", Static).update("Статус: ✕ Нет соединения")
+            self._log(f"✕ Server unavailable: {e}", "event-error")
+            self.query_one("#status-bar", Static).update("Status: ✕ No connection")
             return
 
         await self._reload()
@@ -251,15 +251,15 @@ class PipelinesTUI(App):
             result = await self._client.start(config)
             if result.get("status") == "started":
                 self._running = True
-                self._log("▶ Захват запущен", "event-summary")
+                self._log("▶ Capture started", "event-summary")
                 self.query_one("#btn-start", Button).disabled = True
                 self.query_one("#btn-stop", Button).disabled = False
                 self._timer_start = __import__("time").time()
                 self._poll_timer = self.set_interval(1, self._tick_timer)
             else:
-                self._log(f"⚠ {result.get('status', 'ошибка')}", "event-tip")
+                self._log(f"⚠ {result.get('status', 'error')}", "event-tip")
         except Exception as e:
-            self._log(f"✕ Ошибка запуска: {e}", "event-error")
+            self._log(f"✕ Start error: {e}", "event-error")
 
     @on(Button.Pressed, "#btn-stop")
     def on_stop(self):
@@ -267,10 +267,10 @@ class PipelinesTUI(App):
         if self._poll_timer:
             self._poll_timer.stop()
             self._poll_timer = None
-        self._log("⏹ Остановка...", "event-summary")
+        self._log("⏹ Stopping...", "event-summary")
         self.query_one("#btn-start", Button).disabled = False
         self.query_one("#btn-stop", Button).disabled = True
-        self.query_one("#status-bar", Static).update("Статус: ● Остановлен")
+        self.query_one("#status-bar", Static).update("Status: ● Stopped")
         # Fire-and-forget via thread (non-blocking)
         import threading
         threading.Thread(target=lambda: asyncio.run(self._client.stop()), daemon=True).start()
@@ -281,9 +281,9 @@ class PipelinesTUI(App):
         try:
             await self._client.save_config(config)
             self._config = config
-            self._log("💾 Конфигурация сохранена", "event-summary")
+            self._log("💾 Config saved", "event-summary")
         except Exception as e:
-            self._log(f"✕ Ошибка сохранения: {e}", "event-error")
+            self._log(f"✕ Save error: {e}", "event-error")
 
     def _tick_timer(self):
         """Sync timer callback — fast, no blocking."""
@@ -292,7 +292,7 @@ class PipelinesTUI(App):
         elapsed = int(__import__("time").time() - self._timer_start)
         h, m, s = elapsed // 3600, (elapsed % 3600) // 60, elapsed % 60
         self.query_one("#status-bar", Static).update(
-            f"Статус: ● Запись ({h:02d}:{m:02d}:{s:02d})"
+            f"Status: ● Recording ({h:02d}:{m:02d}:{s:02d})"
         )
 
     def _collect_config(self) -> dict:
@@ -338,7 +338,7 @@ class PipelinesTUI(App):
                 self._log(f"🌐 {ts} \"{trans}...\"", "event-trans")
         elif etype == "summary":
             num = data.get("number", 0)
-            self._log(f"📋 Сводка #{num} готова", "event-summary")
+            self._log(f"📋 Summary #{num} ready", "event-summary")
         elif etype == "tip":
             self._log(f"💡 {data.get('message', '')}", "event-tip")
         elif etype == "error":
