@@ -54,17 +54,22 @@ class ScreenCapture:
         self._interval = interval
         self._monitor_index = monitor_index
         self._running = False
+        self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
         self._queue: queue.Queue[ScreenFrame | None] = queue.Queue(maxsize=1)
 
     def start(self):
         self._running = True
-        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._stop_event.clear()
+        self._thread = threading.Thread(target=self._loop, daemon=False)
         self._thread.start()
 
     def stop(self):
         self._running = False
+        self._stop_event.set()
         self._queue.put(None)
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=10.0)
 
     def get(self, timeout: float | None = None) -> ScreenFrame | None:
         return self._queue.get(timeout=timeout)
@@ -100,7 +105,11 @@ class ScreenCapture:
                         elapsed = time.monotonic() - start
                         sleep_for = self._interval - elapsed
                         if sleep_for > 0:
-                            time.sleep(sleep_for)
+                            self._stop_event.wait(timeout=sleep_for)
+                        if self._stop_event.is_set():
+                            break
+                    if self._stop_event.is_set():
+                        break
             except Exception as e:
                 print(f"[screen-capture] fatal: {e}, restarting in 5s...")
                 time.sleep(5)
@@ -155,6 +164,7 @@ class AudioCapture:
 
     def stop(self):
         self._running = False
+        self._emit_chunk()              # flush remaining buffered audio
         if self._stream is not None:
             stream = self._stream
             self._stream = None

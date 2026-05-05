@@ -139,6 +139,7 @@ class PipelinesTUI(App):
         self._last_event_id = 0
         self._timer_start = 0.0
         self._poll_timer = None
+        self._events_timer = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -204,7 +205,12 @@ class PipelinesTUI(App):
         await self._reload()
 
         # Poll events every second
-        self.set_interval(1.0, self._poll_events)
+        self._events_timer = self.set_interval(1.0, self._poll_events)
+
+    async def on_unmount(self):
+        if self._events_timer:
+            self._events_timer.stop()
+        await self._client.disconnect()
 
     async def _reload(self):
         try:
@@ -262,18 +268,24 @@ class PipelinesTUI(App):
             self._log(f"✕ Start error: {e}", "event-error")
 
     @on(Button.Pressed, "#btn-stop")
-    def on_stop(self):
+    async def on_stop(self):
         self._running = False
         if self._poll_timer:
             self._poll_timer.stop()
             self._poll_timer = None
+        if self._events_timer:
+            self._events_timer.stop()
+            self._events_timer = None
         self._log("⏹ Stopping...", "event-summary")
         self.query_one("#btn-start", Button).disabled = False
         self.query_one("#btn-stop", Button).disabled = True
         self.query_one("#status-bar", Static).update("Status: ● Stopped")
-        # Fire-and-forget via thread (non-blocking)
-        import threading
-        threading.Thread(target=lambda: asyncio.run(self._client.stop()), daemon=True).start()
+        try:
+            await self._client.stop()
+        except Exception:
+            pass
+        # Resume polling for next start
+        self._events_timer = self.set_interval(1.0, self._poll_events)
 
     @on(Button.Pressed, "#btn-save")
     async def on_save(self):

@@ -121,6 +121,8 @@ class Pipeline:
         try:
             while self._running:
                 await asyncio.sleep(1.0)
+                if not self._running:
+                    break
                 now = time.time()
                 if now - self._last_summary_at >= self._segment_duration:
                     await self._summarize_segment(now)
@@ -128,20 +130,18 @@ class Pipeline:
             self._running = False
             frame_task.cancel()
             audio_task.cancel()
+            # Wait for tasks with timeout, then force-cancel remainders
+            _, pending = await asyncio.wait(
+                [frame_task, audio_task], timeout=5.0
+            )
+            for task in pending:
+                task.cancel()
             self._screen.stop()
             self._audio.stop()
-            try:
-                await asyncio.wait_for(
-                    asyncio.gather(frame_task, audio_task, return_exceptions=True),
-                    timeout=5.0,
-                )
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
     def stop(self):
+        """Signal pipeline to stop — actual cleanup happens in run()'s finally."""
         self._running = False
-        self._screen.stop()
-        self._audio.stop()
 
     async def _process_frames(self):
         """Consume screen frames from the capture queue, send to vision model."""

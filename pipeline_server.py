@@ -73,7 +73,7 @@ class PipelineServer:
             self._config = {**self._config, **config}
             save_config(self._config)
 
-        if self._pipeline and self._pipeline._running:
+        if self._running:
             return {"status": "already_running"}
 
         self._pipeline = Pipeline(
@@ -93,7 +93,7 @@ class PipelineServer:
 
         self._start_time = time.time()
         self._running = True
-        asyncio.create_task(self._run_pipeline())
+        asyncio.create_task(self._run_pipeline(self._pipeline))
         return {"status": "started"}
 
     async def stop_pipeline(self):
@@ -103,13 +103,16 @@ class PipelineServer:
         self._running = False
         return {"status": "stopped"}
 
-    async def _run_pipeline(self):
+    async def _run_pipeline(self, my_pipeline: Pipeline):
+        """Runs a specific pipeline instance; only cleans up if still current."""
         try:
-            await self._pipeline.run()
+            await my_pipeline.run()
         except Exception as e:
             self._emit("error", {"message": str(e)})
         finally:
-            self._running = False
+            if self._pipeline is my_pipeline:
+                self._running = False
+                self._pipeline = None
 
     # ── HTTP handlers ──
 
