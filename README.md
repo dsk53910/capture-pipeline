@@ -103,7 +103,12 @@ Opens a terminal UI with:
 - **Live event log** — screenshots, transcripts, summaries streaming
 - **Config auto-save** — settings persist to `pipeline_config.yaml`
 
-Press **Ctrl+C** to stop.
+**Keyboard shortcuts:**
+| Key | Action |
+|-----|--------|
+| `Start` button | Start capture |
+| `Stop` button | Stop capture |
+| `Ctrl+C`, `Ctrl+Q` | Quit app + stop server |
 
 ### Headless mode
 

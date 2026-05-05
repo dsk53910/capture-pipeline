@@ -4,7 +4,7 @@
 
 - [x] **Server** — `pipeline_server.py`: HTTP API on :8730, event buffer (TUI polls `/events?since=N`)
 - [x] **TUI** — `pipeline_tui.py`: Textual control panel, settings + live log, timer
-- [x] **One-button launch** — `start.sh`: server (bg) + TUI (fg), Ctrl+C stops both
+- [x] **One-button launch** — `start.sh`: server (bg) + TUI (fg), kill via lsof, Ctrl+C/quit stops both
 - [x] **Config persistence** — `pipeline_config.yaml` auto-saves from TUI
 - [x] **Audio device dropdown** — live selection from sounddevice query
 - [x] **Model selection** — vision, whisper, summary in TUI
@@ -12,17 +12,22 @@
 - [x] **Interval controls** — screen interval, segment duration in TUI
 - [x] **MOV transcription** — `transcribe_mov.py` with timestamps, speaker labels (RMS), compression
 - [x] **BGRA→RGB fix** — mss returns BGRA, converted to RGB for PIL/GPT-4o
-- [x] **Shutdown fix** — instant stop button, no WS hang, polling-based events
+- [x] **Start/Stop reliability** — 11 bugs fixed (event loop, race conditions, thread join, task cleanup)
+- [x] **Microphone capture fix** — per-channel RMS max (not mean) for aggregate device silence detection
+- [x] **Stop button visual state** — variant + refresh() on enable/disable
+- [x] **Keyboard bindings** — Ctrl+C, Ctrl+Q to quit
+- [x] **English UI** — all labels, buttons, status translated from Russian
 - [x] **Audio noise filter** — RMS check in `_emit_chunk`, skips near-silence chunks
 - [x] **Stereo/multi-channel mix** — aggregate device channels mixed to mono
+- [x] **Flush audio buffer on stop** — last seconds not lost
+- [x] **Formula fix** — `Dir.chdir` instead of `system chdir:`, no cask dependency
 
 ---
 
 ## Server + TUI (next)
 
-- [ ] **System audio switching** — auto-set output on start, restore on stop (needs `SwitchAudioSource`)
-- [ ] **Live tips** — contextual advice: quiet voice → increase gain, silence → check device, tokens → try gpt-4o-mini
-- [ ] **Audio gain slider** — actually apply gain multiplier to audio samples server-side
+- [ ] **Live tips** — contextual advice: quiet voice → increase gain, silence → check device
+- [ ] **Audio gain slider** — apply gain multiplier to audio samples
 - [ ] **Audio chunk overlap** — add overlap between chunks to avoid speech loss at boundaries
 
 ---
