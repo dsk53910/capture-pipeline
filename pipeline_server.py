@@ -86,6 +86,8 @@ class PipelineServer:
             summary_model=self._config["summary_model"],
             output_dir=self._config["output_dir"],
             segment_duration=self._config["segment_duration"],
+            translate=self._config.get("translate", False),
+            translate_to=self._config.get("translate_to", "Russian"),
         )
         self._pipeline._on_event = self._emit
 

@@ -34,17 +34,51 @@ echo 'OPENAI_API_KEY=sk-...' > .env
 
 ## Audio setup (macOS, one-time)
 
-After installing BlackHole and rebooting:
+After installing BlackHole and rebooting, open **Audio MIDI Setup.app**.
 
-1. Open **Audio MIDI Setup.app**
-2. `+` → **Create Multi-Output Device** → check `BlackHole 2ch` + your speakers
-3. `+` → **Create Aggregate Device** → check `BlackHole 2ch` + your microphone
-4. **System Settings → Sound → Output** → select `Multi-Output Device`
+### 1. Create Multi-Output Device (for system output)
+
+`+` → **Create Multi-Output Device** → check:
+- `BlackHole 2ch`
+- `MacBook Air Speakers` (or your output device)
+
+| Setting | BlackHole 2ch | Speakers |
+|---|---|---|
+| Volume | **100%** | As you like |
+| Drift Correction | ✅ Yes | ✅ Yes |
+
+### 2. Create Aggregate Device (for capture input)
+
+`+` → **Create Aggregate Device** → check:
+- `BlackHole 2ch`
+- `MacBook Air Microphone` (or your input device)
+
+| Setting | BlackHole 2ch | Microphone |
+|---|---|---|
+| Volume | 100% | Cannot adjust here\* |
+| Drift Correction | ✅ Yes | ✅ Yes |
+
+\* Microphone gain: **System Settings → Sound → Input** → adjust level.
+
+### 3. System Settings
+
+- **System Settings → Sound → Output** → select `Multi-Output Device`
+- **System Settings → Sound → Input** → does not matter (our code picks the device via TUI)
+
+### Signal flow
 
 ```
-System Output → Multi-Output (BlackHole 2ch + Speakers)   ← sound goes here
-Capture Input → Aggregate (BlackHole 2ch + Microphone)    ← captured from here
+YouTube → Multi-Output ──┬── BlackHole 2ch (loopback) ──┐
+                         └── Speakers (you hear)         │
+                                                        ├── Aggregate (capture input)
+You speak → Microphone ─────────────────────────────────┘
 ```
+
+### In the TUI
+
+Select `Aggregate Device` from the dropdown. The code mixes all 3 channels (BlackHole ×2 + Microphone) into mono.
+
+> **Why two devices?** Multi-Output is output-only (drives speakers), Aggregate is input-only (captures audio). Using Aggregate for both causes clicking — separate devices avoid clock drift issues.
 
 ## Launch
 

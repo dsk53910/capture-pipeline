@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime
 
 import aiohttp
-from textual import on, work
+from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import (
@@ -127,7 +127,7 @@ class PipelinesTUI(App):
     .event-trans { color: grey; }
     .event-summary { color: blue; }
     .event-tip { color: yellow; }
-    .event-error { color: red; }
+    .event-error { color: #cc4444; }
     """
 
     def __init__(self):
@@ -137,6 +137,8 @@ class PipelinesTUI(App):
         self._config: dict = {}
         self._devices: list[dict] = []
         self._last_event_id = 0
+        self._timer_start = 0.0
+        self._poll_timer = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -252,7 +254,8 @@ class PipelinesTUI(App):
                 self._log("▶ Захват запущен", "event-summary")
                 self.query_one("#btn-start", Button).disabled = True
                 self.query_one("#btn-stop", Button).disabled = False
-                self._update_timer()
+                self._timer_start = __import__("time").time()
+                self._poll_timer = self.set_interval(1, self._tick_timer)
             else:
                 self._log(f"⚠ {result.get('status', 'ошибка')}", "event-tip")
         except Exception as e:
@@ -261,11 +264,16 @@ class PipelinesTUI(App):
     @on(Button.Pressed, "#btn-stop")
     def on_stop(self):
         self._running = False
+        if self._poll_timer:
+            self._poll_timer.stop()
+            self._poll_timer = None
         self._log("⏹ Остановка...", "event-summary")
         self.query_one("#btn-start", Button).disabled = False
         self.query_one("#btn-stop", Button).disabled = True
         self.query_one("#status-bar", Static).update("Статус: ● Остановлен")
-        asyncio.create_task(self._client.stop())
+        # Fire-and-forget via thread (non-blocking)
+        import threading
+        threading.Thread(target=lambda: asyncio.run(self._client.stop()), daemon=True).start()
 
     @on(Button.Pressed, "#btn-save")
     async def on_save(self):
@@ -276,6 +284,16 @@ class PipelinesTUI(App):
             self._log("💾 Конфигурация сохранена", "event-summary")
         except Exception as e:
             self._log(f"✕ Ошибка сохранения: {e}", "event-error")
+
+    def _tick_timer(self):
+        """Sync timer callback — fast, no blocking."""
+        if not self._running:
+            return
+        elapsed = int(__import__("time").time() - self._timer_start)
+        h, m, s = elapsed // 3600, (elapsed % 3600) // 60, elapsed % 60
+        self.query_one("#status-bar", Static).update(
+            f"Статус: ● Запись ({h:02d}:{m:02d}:{s:02d})"
+        )
 
     def _collect_config(self) -> dict:
         return {
@@ -288,17 +306,6 @@ class PipelinesTUI(App):
             "screen_interval": self.query_one("#sel-screen", Select).value,
             "segment_duration": self.query_one("#sel-segment", Select).value,
         }
-
-    @work(exclusive=False)
-    async def _update_timer(self):
-        start = __import__("time").time()
-        while self._running:
-            elapsed = int(__import__("time").time() - start)
-            h, m, s = elapsed // 3600, (elapsed % 3600) // 60, elapsed % 60
-            self.query_one("#status-bar", Static).update(
-                f"Статус: ● Запись ({h:02d}:{m:02d}:{s:02d})"
-            )
-            await asyncio.sleep(1)
 
     async def _poll_events(self):
         """Fetch new events from server every second."""

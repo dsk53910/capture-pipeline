@@ -154,7 +154,7 @@ class Pipeline:
             try:
                 desc = await self._vision.describe(frame)
                 self._frames.append(desc)
-                await self._on_event("vision", {
+                self._on_event("vision", {
                     "captured_at": desc.captured_at,
                     "description": desc.description,
                     "width": desc.width,
@@ -166,7 +166,9 @@ class Pipeline:
                 )
                 await self._save_frame(desc)
             except Exception as e:
-                print(f"[vision] error: {e}")
+                msg = f"[vision] {e}"
+                print(msg)
+                self._on_event("error", {"message": msg})
 
     async def _process_audio(self):
         """Consume audio chunks from the capture queue, send to whisper."""
@@ -187,7 +189,7 @@ class Pipeline:
                         if translation:
                             transcript.translation = translation
                     self._transcripts.append(transcript)
-                    await self._on_event("audio", {
+                    self._on_event("audio", {
                         "captured_at": transcript.captured_at,
                         "text": transcript.text,
                         "language": transcript.language,
@@ -200,7 +202,9 @@ class Pipeline:
                         print(f"[trans] {ts} \"{transcript.translation[:100]}...\"")
                     await self._save_transcript(transcript)
             except Exception as e:
-                print(f"[audio] error: {e}")
+                msg = f"[audio] {e}"
+                print(msg)
+                self._on_event("error", {"message": msg})
 
     async def _summarize_segment(self, now: float):
         if not self._frames and not self._transcripts:
@@ -216,7 +220,7 @@ class Pipeline:
             summary = await self._summarizer.summarize(segment)
             self._summary_count += 1
             await self._save_summary(summary, segment.start_time, segment.end_time)
-            await self._on_event("summary", {
+            self._on_event("summary", {
                 "number": self._summary_count,
                 "start": segment.start_time,
                 "end": segment.end_time,
@@ -224,7 +228,9 @@ class Pipeline:
             })
             print(f"\n[summary #{self._summary_count}]\n{summary}\n")
         except Exception as e:
-            print(f"[summary] error: {e}")
+            msg = f"[summary] {e}"
+            print(msg)
+            self._on_event("error", {"message": msg})
 
         # Reset accumulators
         self._frames.clear()
