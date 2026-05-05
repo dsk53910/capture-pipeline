@@ -183,11 +183,16 @@ class AudioCapture:
         if not self._running:
             raise sd.CallbackStop
 
-        # Mix all channels → mono (aggregate device: system audio + mic)
-        mono = np.mean(indata, axis=1) if indata.ndim > 1 else indata
-        self._buffer.append(mono.copy())
+        # Mix to mono (average preserves balance for Whisper)
+        mono = np.mean(indata, axis=1) if indata.ndim > 1 else indata.copy()
+        self._buffer.append(mono)
 
-        rms = np.sqrt(np.mean(mono**2))
+        # Use per-channel RMS max for silence detection (aggregate: mic + BlackHole)
+        if indata.ndim > 1 and indata.shape[1] > 1:
+            rms = float(np.max(np.sqrt(np.mean(indata**2, axis=0))))
+        else:
+            rms = np.sqrt(np.mean(mono**2))
+
         if rms < self._silence_threshold:
             self._silence_samples += frames
         else:

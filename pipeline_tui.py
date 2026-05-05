@@ -76,6 +76,12 @@ class ServerClient:
 
 
 class PipelinesTUI(App):
+    BINDINGS = [
+        ("ctrl+c", "quit", "Quit"),
+        ("ctrl+q", "quit", "Quit"),
+        ("escape", "quit", "Quit"),
+    ]
+
     CSS = """
     Screen {
     }
@@ -284,7 +290,6 @@ class PipelinesTUI(App):
             await self._client.stop()
         except Exception:
             pass
-        # Resume polling for next start
         self._events_timer = self.set_interval(1.0, self._poll_events)
 
     @on(Button.Pressed, "#btn-save")
@@ -322,7 +327,6 @@ class PipelinesTUI(App):
     async def _poll_events(self):
         """Fetch new events from server every second."""
         if not self._running:
-            # Still check server status for remote stop
             return
 
         try:

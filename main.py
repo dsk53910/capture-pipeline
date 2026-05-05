@@ -127,10 +127,8 @@ class Pipeline:
                 if now - self._last_summary_at >= self._segment_duration:
                     await self._summarize_segment(now)
         finally:
-            self._running = False
             frame_task.cancel()
             audio_task.cancel()
-            # Wait for tasks with timeout, then force-cancel remainders
             _, pending = await asyncio.wait(
                 [frame_task, audio_task], timeout=5.0
             )
